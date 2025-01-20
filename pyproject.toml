@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jobsparser"
-version = "0.1.1"
+version = "0.1.2"
 description = "CLI tool to scrape jobs from multiple job sites"
 authors = [
     {name = "FranciscoMoretti"}
@@ -25,7 +25,7 @@ classifiers = [
 dependencies = [
     "click>=8.0.0",
     "pandas>=2.0.0",
-    "jobspy>=0.29.0"
+    "python-jobspy>=0.29.0"
 ]
 
 [project.urls]
