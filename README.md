@@ -2,6 +2,8 @@
 
 A simple CLI tool to scrape jobs from multiple job sites (LinkedIn, Indeed, Glassdoor) using [JobSpy](https://github.com/Bunsly/JobSpy).
 
+Relevant article: [Automate Your Job Search: Scraping 400+ LinkedIn Jobs with Python](https://www.franciscomoretti.com/blog/automate-your-job-search)
+
 ## Installation
 
 From PyPI (coming soon):
