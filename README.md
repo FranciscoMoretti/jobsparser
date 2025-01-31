@@ -39,7 +39,8 @@ jobsparser \
     --results-wanted 200 \
     --distance 50 \
     --job-type fulltime \
-    --output-dir "my_jobs"
+    --output-dir "my_jobs" \
+    --hours-old 168
 ```
 
 See all options:
@@ -72,7 +73,7 @@ jobsparser --help
 - `--batch-size`: Results per batch (default: 30)
 - `--sleep-time`: Base sleep time between batches (default: 100)
 - `--output-dir`: Directory for CSV files (default: data)
-
+- `--hours-old`: Hours old for job search (default: None)
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.

@@ -17,9 +17,10 @@ import time
 @click.option('--batch-size', default=30, help='Number of results to fetch in each batch')
 @click.option('--sleep-time', default=100, help='Base sleep time between batches in seconds')
 @click.option('--max-retries', default=3, help='Maximum retry attempts per batch')
+@click.option('--hours-old', default=None, help='Hours old for job search')
 @click.option('--output-dir', default='data', help='Directory to save output CSV')
 def main(search_term, location, site, results_wanted, distance, job_type, country,
-         fetch_description, proxies, batch_size, sleep_time, max_retries, output_dir):
+         fetch_description, proxies, batch_size, sleep_time, max_retries, hours_old, output_dir):
     """Scrape jobs from various job sites with customizable parameters."""
     
     # Create output directory
@@ -50,6 +51,7 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
                     results_wanted=min(batch_size, results_wanted - len(all_jobs)),
                     offset=offset,
                     proxies=proxies,
+                    hours_old=hours_old,
                 )
 
                 all_jobs.extend(jobs.to_dict("records"))
