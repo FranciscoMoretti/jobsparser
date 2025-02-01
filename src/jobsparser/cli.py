@@ -1,8 +1,9 @@
 import click
-from jobspy import scrape_jobs
+from jobspy2 import scrape_jobs, LinkedInExperienceLevel
 import pandas as pd
 import os
 import time
+
 
 @click.command()
 @click.option('--search-term', required=True, help='Job search query')
@@ -19,8 +20,9 @@ import time
 @click.option('--max-retries', default=3, help='Maximum retry attempts per batch')
 @click.option('--hours-old', default=None, help='Hours old for job search')
 @click.option('--output-dir', default='data', help='Directory to save output CSV')
+@click.option('--linkedin-experience-level', multiple=True, type=click.Choice([level.value for level in LinkedInExperienceLevel]), default=None, help='Experience levels to search for on LinkedIn')
 def main(search_term, location, site, results_wanted, distance, job_type, country,
-         fetch_description, proxies, batch_size, sleep_time, max_retries, hours_old, output_dir):
+         fetch_description, proxies, batch_size, sleep_time, max_retries, hours_old, output_dir, linkedin_experience_level):
     """Scrape jobs from various job sites with customizable parameters."""
     
     # Create output directory
@@ -41,7 +43,7 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
             click.echo(f"Fetching jobs {offset} to {offset + batch_size}")
             try:
                 jobs = scrape_jobs(
-                    site_name=list(site),
+                    site_name=list(site)[0],
                     search_term=search_term,
                     location=location,
                     distance=distance,
@@ -52,6 +54,7 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
                     offset=offset,
                     proxies=proxies,
                     hours_old=hours_old,
+                    linkedin_experience_levels=linkedin_experience_level
                 )
 
                 all_jobs.extend(jobs.to_dict("records"))
