@@ -29,7 +29,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/fran/jobsparser"
+Repository = "https://github.com/FranciscoMoretti/jobsparser"
 
 [project.scripts]
 jobsparser = "jobsparser.cli:main"

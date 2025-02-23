@@ -13,7 +13,7 @@ pip install jobsparser
 
 From source:
 ```bash
-git clone https://github.com/fran/jobsparser
+git clone https://github.com/FranciscoMoretti/jobsparser
 cd jobsparser
 pip install .
 ```
