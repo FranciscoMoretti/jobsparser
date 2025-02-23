@@ -41,3 +41,10 @@ Alternatively, enter credentials when prompted by twine.
 1. Update version in `pyproject.toml`
 2. Build and upload as above
 ```
+
+### Install from source
+
+```bash
+pip install .
+```
+
