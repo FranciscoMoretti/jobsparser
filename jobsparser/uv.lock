@@ -141,14 +141,14 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.0.0" },
-    { name = "jobspy2", specifier = ">=0.0.5" },
+    { name = "jobspy2", editable = "../jobspy2" },
     { name = "pandas", specifier = ">=2.0.0" },
 ]
 
 [[package]]
 name = "jobspy2"
 version = "0.0.5"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../jobspy2" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "markdownify" },
@@ -159,9 +159,30 @@ dependencies = [
     { name = "requests" },
     { name = "tls-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/71/b7/4e4c909efc918d8a26b49ffdc1cc3eb74997d26580e313648be534337ec5/jobspy2-0.0.5.tar.gz", hash = "sha256:b8aaec65fd2adc8c76d72bf88384469fd175932cbb74335eeb6ec3caeb630431", size = 33244 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/01/040ad046a58018c31fb27bbe099a2a32460ecd48fab59274b9030c2b637e/jobspy2-0.0.5-py3-none-any.whl", hash = "sha256:6b9b4e9afeb3872810ec73c4b7b5935f3a08e979a2ccc1faad9846a662afb86a", size = 37636 },
+
+[package.metadata]
+requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.12.2" },
+    { name = "markdownify", specifier = ">=0.13.1" },
+    { name = "numpy", specifier = "==1.26.3" },
+    { name = "pandas", specifier = ">=2.1.0" },
+    { name = "pydantic", specifier = ">=2.3.0" },
+    { name = "regex", specifier = ">=2024.4.28" },
+    { name = "requests", specifier = ">=2.31.0" },
+    { name = "tls-client", specifier = ">=1.0.1" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "deptry", specifier = ">=0.22.0" },
+    { name = "mkdocs", specifier = ">=1.4.2" },
+    { name = "mkdocs-material", specifier = ">=8.5.10" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.26.1" },
+    { name = "mypy", specifier = ">=0.991" },
+    { name = "pre-commit", specifier = ">=2.20.0" },
+    { name = "pytest", specifier = ">=7.2.0" },
+    { name = "ruff", specifier = ">=0.9.2" },
+    { name = "tox-uv", specifier = ">=1.11.3" },
 ]
 
 [[package]]
