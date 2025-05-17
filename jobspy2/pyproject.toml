@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "jobspy2"
-version = "0.0.5"
+version = "0.0.6"
 description = "Scrape job posting from different job boards"
 authors = [{ name = "Francisco Moretti", email = "franciscoemoretti@gmail.com" }]
 readme = "README.md"
