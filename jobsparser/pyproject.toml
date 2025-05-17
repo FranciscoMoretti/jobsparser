@@ -28,6 +28,9 @@ dependencies = [
     "jobspy2>=0.0.5"
 ]
 
+[tool.uv.sources]
+anyio = { path = "../jobspy2", editable = true }
+
 [project.urls]
 Repository = "https://github.com/FranciscoMoretti/jobsparser"
 
