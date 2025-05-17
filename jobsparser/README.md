@@ -6,7 +6,7 @@ Relevant article: [Automate Your Job Search: Scraping 400+ LinkedIn Jobs with Py
 
 ## Installation
 
-From PyPI (coming soon):
+From PyPI:
 ```bash
 pip install jobsparser
 ```
@@ -33,8 +33,8 @@ jobsparser --search-term "Frontend Engineer" --location "Remote" --site linkedin
 Advanced usage:
 ```bash
 jobsparser \
-    --search-term "Data Scientist" \
-    --location "New York" \
+    --search-term "Frontend Developer" \
+    --location "London" \
     --site linkedin \
     --results-wanted 200 \
     --distance 50 \

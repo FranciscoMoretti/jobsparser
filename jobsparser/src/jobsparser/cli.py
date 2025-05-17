@@ -3,9 +3,28 @@ from jobspy2 import scrape_jobs, LinkedInExperienceLevel
 import pandas as pd
 import os
 import time
+import importlib.metadata
 
+# Function to get version
+def get_version(ctx, param, value):
+    if not value or ctx.resilient_parsing:
+        return
+    try:
+        version = importlib.metadata.version("jobsparser")
+    except importlib.metadata.PackageNotFoundError:
+        version = "unknown" # Fallback if package not installed
+    click.echo(f"jobsparser, version {version}")
+    ctx.exit()
 
 @click.command()
+@click.option(
+    "--version",
+    is_flag=True,
+    callback=get_version,
+    expose_value=False,
+    is_eager=True,
+    help="Show the version and exit.",
+)
 @click.option('--search-term', required=True, help='Job search query')
 @click.option('--location', required=True, help='Job location')
 @click.option('--site', multiple=True, type=click.Choice(['linkedin', 'indeed', 'glassdoor']), default=['linkedin'], help='Job sites to search')

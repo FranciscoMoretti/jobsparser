@@ -34,3 +34,4 @@ ENV/
 # Project specific
 data/
 *.csv
+.env
