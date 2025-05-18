@@ -1,4 +1,3 @@
-
 # `jobsparser`
 
 A simple CLI tool to scrape jobs from multiple job sites (LinkedIn, Indeed, Glassdoor).
@@ -73,8 +72,10 @@ jobsparser --help
 - `--job-type`: Type of job (default: fulltime)
 - `--country`: Country code for Indeed search (default: UK)
 - `--fetch-description`: Fetch full job description (default: true)
+- `--proxies`: Proxy addresses to use (can be specified multiple times)
 - `--batch-size`: Results per batch (default: 30)
 - `--sleep-time`: Base sleep time between batches (default: 100)
+- `--max-retries`: Maximum retry attempts per batch (default: 3)
 - `--output-dir`: Directory for CSV files (default: data)
 - `--hours-old`: Hours old for job search (default: None)
 - `--linkedin-experience-level`: Experience levels for LinkedIn search (internship, entry_level, associate, mid_senior, director, executive)

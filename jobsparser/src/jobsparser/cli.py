@@ -124,7 +124,7 @@ def _scrape_single_site(
     is_eager=True,
     help="Show the version and exit.",
 )
-@click.option('--search-term', required=True, help='Job search query')
+@click.option('--search-term', required=True, multiple=True, help='Job search query (can be specified multiple times)')
 @click.option('--location', required=True, help='Job location')
 @click.option('--site', multiple=True, type=click.Choice(['linkedin', 'indeed', 'glassdoor', 'zip_recruiter', 'google']), default=['linkedin'], help='Job sites to search')
 @click.option('--results-wanted', default=100, help='Total number of results to fetch per site')
@@ -149,8 +149,6 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
         cli_log_level = logging.INFO
     elif verbose >= 1: # -v or -vv etc
         cli_log_level = logging.DEBUG
-
-
 
     os.makedirs(output_dir, exist_ok=True)
     
@@ -179,71 +177,77 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
         root_logger.addHandler(summary_handler)
         root_logger.propagate = False
 
-
     root_logger.info("Starting job scraping...")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(site)) as executor:
-        future_to_site_logger_map = {}
-        for i, site_name_str in enumerate(site):
-            color_index = i % len(site_colors)
-            current_color = site_colors[color_index]
-            prefix = f"[{site_name_str.upper()}] "
+    # Process each search term sequentially
+    for idx, current_search_term in enumerate(search_term):
+        if idx > 0:  # Skip sleep before first search term
+            root_logger.info(f"Sleeping for {sleep_time} seconds before next search term...")
+            time.sleep(sleep_time)
             
-            # Create and configure a logger for this specific site
-            site_logger_name = f"jobsparser.cli.{site_name_str}"
-            site_logger = logging.getLogger(site_logger_name)
-            site_logger.setLevel(cli_log_level) # Set level based on verbosity
+        root_logger.info(f"Processing search term: {current_search_term}")
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(site)) as executor:
+            future_to_site_logger_map = {}
+            for i, site_name_str in enumerate(site):
+                color_index = i % len(site_colors)
+                current_color = site_colors[color_index]
+                prefix = f"[{site_name_str.upper()}] "
+                
+                # Create and configure a logger for this specific site
+                site_logger_name = f"jobsparser.cli.{site_name_str}"
+                site_logger = logging.getLogger(site_logger_name)
+                site_logger.setLevel(cli_log_level) # Set level based on verbosity
 
-            # Clear existing handlers to prevent duplication if re-run
-            if site_logger.hasHandlers():
-                site_logger.handlers.clear()
+                # Clear existing handlers to prevent duplication if re-run
+                if site_logger.hasHandlers():
+                    site_logger.handlers.clear()
 
-            handler = ClickColorHandler(prefix=prefix, color=current_color)
-            handler.setFormatter(formatter)
-            site_logger.addHandler(handler)
-            site_logger.propagate = False # Don't send to root logger if we have specific handling
+                handler = ClickColorHandler(prefix=prefix, color=current_color)
+                handler.setFormatter(formatter)
+                site_logger.addHandler(handler)
+                site_logger.propagate = False # Don't send to root logger if we have specific handling
 
-            site_logger.info(f"Submitting task to scrape {results_wanted} jobs.")
-            
-            future = executor.submit(
-                _scrape_single_site,
-                site_name=site_name_str,
-                search_term=search_term,
-                location=location,
-                distance=distance,
-                linkedin_fetch_description=fetch_description,
-                job_type=job_type,
-                country_indeed=country,
-                results_wanted_for_site=results_wanted,
-                proxies=list(proxies) if proxies else None,
-                hours_old=hours_old,
-                linkedin_experience_levels=list(linkedin_experience_level) if linkedin_experience_level else None,
-                logger=site_logger,
-                batch_size=batch_size,
-                sleep_time=sleep_time,
-                max_retries=max_retries,
-            )
-            future_to_site_logger_map[future] = site_logger
+                site_logger.info(f"Submitting task to scrape {results_wanted} jobs.")
+                
+                future = executor.submit(
+                    _scrape_single_site,
+                    site_name=site_name_str,
+                    search_term=current_search_term,
+                    location=location,
+                    distance=distance,
+                    linkedin_fetch_description=fetch_description,
+                    job_type=job_type,
+                    country_indeed=country,
+                    results_wanted_for_site=results_wanted,
+                    proxies=list(proxies) if proxies else None,
+                    hours_old=hours_old,
+                    linkedin_experience_levels=list(linkedin_experience_level) if linkedin_experience_level else None,
+                    logger=site_logger,
+                    batch_size=batch_size,
+                    sleep_time=sleep_time,
+                    max_retries=max_retries,
+                )
+                future_to_site_logger_map[future] = site_logger
 
-        for future in concurrent.futures.as_completed(future_to_site_logger_map):
-            completed_site_logger = future_to_site_logger_map[future]
-            try:
-                jobs_from_site = future.result()
-                all_jobs_collected.extend(jobs_from_site)
-                completed_site_logger.info(f"Completed. Found {len(jobs_from_site)} jobs.")
-            except Exception as exc:
-                completed_site_logger.error(f"Task generated an exception: {exc}", exc_info=True)
-    
-
-
+            for future in concurrent.futures.as_completed(future_to_site_logger_map):
+                completed_site_logger = future_to_site_logger_map[future]
+                try:
+                    jobs_from_site = future.result()
+                    all_jobs_collected.extend(jobs_from_site)
+                    completed_site_logger.info(f"Completed. Found {len(jobs_from_site)} jobs.")
+                except Exception as exc:
+                    completed_site_logger.error(f"Task generated an exception: {exc}", exc_info=True)
 
     if not all_jobs_collected:
         root_logger.warning("No jobs found after scraping all sites. Check parameters or site availability.")
         return
 
+    # Convert to DataFrame and remove duplicates
     jobs_df = pd.DataFrame(all_jobs_collected)
+    jobs_df = jobs_df.drop_duplicates(subset=['job_url'], keep='first')
     jobs_df.to_csv(csv_filename, index=False)
-    root_logger.info(f"Successfully saved {len(all_jobs_collected)} jobs from {len(site)} site(s) to {csv_filename}")
+    root_logger.info(f"Successfully saved {len(jobs_df)} unique jobs from {len(site)} site(s) to {csv_filename}")
 
 if __name__ == '__main__':
     main() 

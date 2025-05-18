@@ -130,7 +130,7 @@ wheels = [
 
 [[package]]
 name = "jobsparser"
-version = "0.1.9"
+version = "0.1.10"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -147,7 +147,7 @@ requires-dist = [
 
 [[package]]
 name = "jobspy2"
-version = "0.0.6"
+version = "0.0.7"
 source = { editable = "../jobspy2" }
 dependencies = [
     { name = "beautifulsoup4" },
