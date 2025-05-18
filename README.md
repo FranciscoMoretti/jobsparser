@@ -8,7 +8,7 @@ Relevant article: [Automate Your Job Search: Scraping 400+ LinkedIn Jobs with Py
 
 From PyPI:
 ```bash
-pip install jobsparser
+pip install -U jobsparser
 ```
 
 From source (if you've cloned this monorepo):
