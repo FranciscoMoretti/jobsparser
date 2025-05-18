@@ -113,6 +113,16 @@ class IndeedScraper(Scraper):
         }
         api_headers_temp = api_headers.copy()
         api_headers_temp["indeed-co"] = self.api_country_code
+        
+        # Log request details for debugging
+        self.logger.debug("Indeed API Request Details:")
+        self.logger.debug(f"URL: {self.api_url}")
+        self.logger.debug("Headers:")
+        for key, value in api_headers_temp.items():
+            self.logger.debug(f"  {key}: {value}")
+        self.logger.debug("Payload:")
+        self.logger.debug(f"  {payload}")
+        
         response = self.session.post(
             self.api_url,
             headers=api_headers_temp,
@@ -256,7 +266,7 @@ class IndeedScraper(Scraper):
         """
         job_types: list[JobType] = []
         for attribute in attributes:
-            if attribute["type"] == "jobtype":
+            if attribute.get("type") == "jobtype":
                 job_type = get_enum_from_job_type(attribute["label"].lower())
                 if job_type:
                     job_types.append(job_type)

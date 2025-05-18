@@ -35,4 +35,4 @@ ENV/
 data/
 *.csv
 .env
-
+**my_jobs

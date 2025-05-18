@@ -33,16 +33,17 @@ jobsparser --search-term "Frontend Engineer" --location "Remote" --site linkedin
 Advanced usage:
 ```bash
 jobsparser \
-    --search-term "Frontend Developer" \
-    --location "London" \
-    --site linkedin \
-    --results-wanted 200 \
-    --distance 50 \
-    --job-type fulltime \
-    --output-dir "my_jobs" \
-    --hours-old 168 \
-    --linkedin-experience-level "internship" \
-    --linkedin-experience-level "entry_level"
+     --search-term "junior web Developer" \
+     --location "London" \
+     --site linkedin \
+     --site indeed \
+     --results-wanted 50 \
+     --job-type fulltime \
+     --output-dir "my_jobs" \
+     --hours-old 168 \
+     --linkedin-experience-level "internship" \
+     --linkedin-experience-level "entry_level" \
+     --country UK
 ```
 
 See all options:

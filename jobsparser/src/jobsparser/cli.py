@@ -175,7 +175,7 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
     # Final summary (could use a general/root logger for this)
     if not root_logger.hasHandlers(): # Basic handler for summary if none exists
         summary_handler = logging.StreamHandler()
-        summary_handler.setFormatter(logging.Formatter('[MAIN] %(message)s')) # Default format
+        summary_handler.setFormatter(logging.Formatter('[JOBSPARSER] %(message)s')) # Default format
         root_logger.addHandler(summary_handler)
         root_logger.propagate = False
 
