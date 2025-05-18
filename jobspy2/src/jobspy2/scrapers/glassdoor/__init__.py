@@ -13,6 +13,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import urlencode
 
 import requests
 
@@ -268,21 +269,22 @@ class GlassdoorScraper(Scraper):
         if not location:
             return 0, "ANYWHERE"
         try:
-            
+            params = {"term": location}
+            query_string = urlencode(params)
+            full_url = f'{self.base_url}findPopularLocationAjax.htm?{query_string}'
+            self.logger.debug(f"Getting Glassdoor location: {full_url}")
             response = self.session.get(
-                f"{self.base_url}/findPopularLocationAjax.htm",
-                params={"term": location},
-                timeout=10,
+                f'{self.base_url}findPopularLocationAjax.htm?',
+                params=params,
             )
             if response.status_code != 200:
-                raise GlassdoorLocationError(location)
+                raise GlassdoorException(f'{response.status_code} {response.text}')
             locations = response.json()
             if not locations:
                 raise GlassdoorLocationError(location)
             return locations[0]["locationId"], locations[0]["locationType"]
         except Exception as e:
-            self.logger.error(f"Failed to get location: {e}")
-            raise GlassdoorLocationError(location) from e
+            raise GlassdoorException() from e
 
     def _add_payload(
         self,
