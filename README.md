@@ -33,7 +33,7 @@ jobsparser --search-term "Frontend Engineer" --location "Remote" --site linkedin
 Advanced usage:
 ```bash
 jobsparser \
-     --search-term "junior web Developer" \
+     --search-term "junior web developer" \
      --location "London" \
      --site linkedin \
      --site indeed \
