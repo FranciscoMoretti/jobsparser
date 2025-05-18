@@ -67,11 +67,14 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
     offset = 0
     all_jobs = []
 
-    while len(all_jobs) < results_wanted:
+    found_all_available_jobs = False
+
+    while len(all_jobs) < results_wanted and not found_all_available_jobs:
         retry_count = 0
         while retry_count < max_retries:
             click.echo(f"Fetching jobs {offset} to {offset + batch_size}")
             try:
+                iteration_results_wanted = min(batch_size, results_wanted - len(all_jobs))
                 jobs = scrape_jobs(
                     site_name=list(site)[0],
                     search_term=search_term,
@@ -80,20 +83,26 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
                     linkedin_fetch_description=fetch_description,
                     job_type=job_type,
                     country_indeed=country,
-                    results_wanted=min(batch_size, results_wanted - len(all_jobs)),
+                    results_wanted=iteration_results_wanted,
                     offset=offset,
                     proxies=proxies,
                     hours_old=hours_old,
                     linkedin_experience_levels=linkedin_experience_level,
                     log_level=log_level
                 )
-
-                all_jobs.extend(jobs.to_dict("records"))
+                new_jobs = jobs.to_dict("records")
+                all_jobs.extend(new_jobs)
                 offset += batch_size
+
+                if len(new_jobs) < iteration_results_wanted:
+                    click.echo(f"Scraped {len(all_jobs)} jobs")
+                    click.echo(f"No more jobs available. Wanted {results_wanted} jobs, got {len(all_jobs)}")
+                    found_all_available_jobs = True
+                    break
 
                 if len(all_jobs) >= results_wanted:
                     break
-
+                    
                 click.echo(f"Scraped {len(all_jobs)} jobs")
                 sleep_duration = sleep_time * (retry_count + 1)
                 click.echo(f"Sleeping for {sleep_duration} seconds")
