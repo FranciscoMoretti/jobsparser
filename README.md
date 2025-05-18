@@ -33,6 +33,7 @@ Advanced usage:
 ```bash
 jobsparser \
      --search-term "junior web developer" \
+     --search-term "junior software engineer" \
      --location "London" \
      --site linkedin \
      --site indeed \
