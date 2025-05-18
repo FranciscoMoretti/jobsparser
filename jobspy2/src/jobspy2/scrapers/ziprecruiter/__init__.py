@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any
 import logging
+from urllib.parse import urlencode
 
 import requests
 from bs4 import BeautifulSoup
@@ -99,14 +100,18 @@ class ZipRecruiterScraper(Scraper):
         if continue_token:
             params["continue_from"] = continue_token
         try:
+            query_string = urlencode(params)
+            full_url = f"{self.api_url}/jobs-app/jobs?{query_string}"	
+            self.logger.debug(f"Getting ZipRecruiter URL: {full_url}")
             res = self.session.get(f"{self.api_url}/jobs-app/jobs", params=params)
             if res.status_code not in range(200, 400):
                 if res.status_code == 429:
-                    err = "429 Response - Blocked by ZipRecruiter for too many requests"
+                    self.logger.error("429 Response - Blocked by ZipRecruiter for too many requests")
+                    self.logger.debug(res.text)
                 else:
                     err = f"ZipRecruiter response status code {res.status_code}"
                     err += f" with response: {res.text}"  # ZipRecruiter likely not available in EU
-                self.logger.error(err)
+                    self.logger.error(err)
                 return jobs_list, ""
         except Exception as e:
             if "Proxy responded with" in str(e):
