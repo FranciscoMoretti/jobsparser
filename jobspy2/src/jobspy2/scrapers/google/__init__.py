@@ -34,12 +34,17 @@ from .constants import async_param, headers_initial, headers_jobs
 
 
 class GoogleJobsScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
         """
         Initializes Google Scraper with the Goodle jobs search url
         """
         site = Site(Site.GOOGLE)
         super().__init__(site, proxies=proxies, ca_cert=ca_cert)
+
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = create_logger("Google")
 
         self.country: str | None = None
         self.session: requests.Session | None = None
@@ -48,7 +53,6 @@ class GoogleJobsScraper(Scraper):
         self.seen_urls: set[str] = set()
         self.url: str = "https://www.google.com/search"
         self.jobs_url: str = "https://www.google.com/async/callback:550"
-        self.logger: logging.Logger | None = None
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -58,11 +62,6 @@ class GoogleJobsScraper(Scraper):
         """
         self.scraper_input = scraper_input
         self.scraper_input.results_wanted = min(900, scraper_input.results_wanted)
-
-        if self.scraper_input.logger:
-            self.logger = self.scraper_input.logger
-        else:
-            self.logger = create_logger("Google")
 
         self.session = create_session(proxies=self.proxies, ca_cert=self.ca_cert, is_tls=False, has_retry=True)
         forward_cursor, job_list = self._get_initial_cursor_and_jobs()

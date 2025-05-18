@@ -49,12 +49,17 @@ class GlassdoorAPIError(GlassdoorException):
 
 
 class GlassdoorScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
         """
         Initializes GlassdoorScraper with the Glassdoor job search url
         """
         site = Site(Site.GLASSDOOR)
         super().__init__(site, proxies=proxies, ca_cert=ca_cert)
+
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = create_logger("Glassdoor")
 
         self.base_url: str | None = None
         self.country: str | None = None
@@ -73,11 +78,6 @@ class GlassdoorScraper(Scraper):
         self.scraper_input = scraper_input
         self.scraper_input.results_wanted = min(900, scraper_input.results_wanted)
         self.base_url = self.scraper_input.country.get_glassdoor_url()
-
-        if self.scraper_input.logger:
-            self.logger = self.scraper_input.logger
-        else:
-            self.logger = create_logger("Glassdoor")
 
         self.session = create_session(proxies=self.proxies, ca_cert=self.ca_cert, is_tls=True, has_retry=True)
         token = self._get_csrf_token()

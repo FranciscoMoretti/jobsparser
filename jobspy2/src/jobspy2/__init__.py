@@ -26,7 +26,7 @@ from .scrapers.glassdoor import GlassdoorScraper
 from .scrapers.google import GoogleJobsScraper
 from .scrapers.indeed import IndeedScraper
 from .scrapers.linkedin import LinkedInScraper
-from .scrapers.utils import create_logger, extract_salary, set_logger_level
+from .scrapers.utils import create_logger, extract_salary
 from .scrapers.ziprecruiter import ZipRecruiterScraper
 
 
@@ -130,7 +130,6 @@ def scrape_jobs(
     offset: int | None = 0,
     hours_old: int | None = None,
     enforce_annual_salary: bool = False,
-    log_level: int | str = logging.INFO,
     logger: logging.Logger | None = None,
     **kwargs,
 ) -> pd.DataFrame:
@@ -145,7 +144,6 @@ def scrape_jobs(
         Site.GLASSDOOR: GlassdoorScraper,
         Site.GOOGLE: GoogleJobsScraper,
     }
-    set_logger_level(log_level)
 
     job_type_enum = _get_enum_from_value(job_type)
     country_enum = Country.from_string(country_indeed)
@@ -179,7 +177,7 @@ def scrape_jobs(
         # If none, fallback to creating a logger for this specific site.
         logger_for_scraper = scraper_input.logger if scraper_input.logger else create_logger(site.value)
 
-        scraper = scraper_class(proxies=proxies, ca_cert=ca_cert)
+        scraper = scraper_class(proxies=proxies, ca_cert=ca_cert, logger=logger_for_scraper)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
         
         # The scraper itself should use its self.logger for its internal logging.

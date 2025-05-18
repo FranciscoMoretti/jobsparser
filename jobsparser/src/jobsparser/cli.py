@@ -46,7 +46,6 @@ def _scrape_single_site(
     proxies: list[str] | None,
     hours_old: int | None,
     linkedin_experience_levels: list | None,
-    jobspy_log_level: int, # log_level for jobspy2 internal, logger for this function's direct logging
     logger: logging.Logger, # Main logger for this function's operations
     batch_size: int,
     sleep_time: int,
@@ -76,7 +75,6 @@ def _scrape_single_site(
                     proxies=proxies,
                     hours_old=hours_old,
                     linkedin_experience_levels=linkedin_experience_levels,
-                    log_level=jobspy_log_level, # For jobspy's internal configuration of its own loggers
                     logger=logger # Pass the parent logger for jobspy to use
                 )
                 if jobs_df_scraped is None or jobs_df_scraped.empty:
@@ -151,11 +149,7 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
         cli_log_level = logging.INFO
     elif verbose >= 1: # -v or -vv etc
         cli_log_level = logging.DEBUG
-    
-    # This log_level is for jobspy2's internal configuration if it needs to set levels on its own loggers
-    # We are passing our own configured logger, so jobspy2 should ideally use that.
-    # jobspy2's set_logger_level might still be called internally by it.
-    jobspy_internal_log_level = logging.DEBUG if verbose >=1 else logging.INFO
+
 
 
     os.makedirs(output_dir, exist_ok=True)
@@ -222,9 +216,8 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
                 country_indeed=country,
                 results_wanted_for_site=results_wanted,
                 proxies=list(proxies) if proxies else None,
-                hours_old=hours_old, # Already int from click option
+                hours_old=hours_old,
                 linkedin_experience_levels=list(linkedin_experience_level) if linkedin_experience_level else None,
-                jobspy_log_level=jobspy_internal_log_level, # For jobspy2 internal setup
                 logger=site_logger, # Pass the configured logger for this site
                 batch_size=batch_size,
                 sleep_time=sleep_time,

@@ -132,33 +132,6 @@ def create_session(
     return session
 
 
-class LoggingError(Exception):
-    """Raised when there are logging-related errors."""
-
-    def __init__(self, level_name: str) -> None:
-        self.message = f"Invalid log level: {level_name!r}"
-        super().__init__(self.message)
-
-
-def set_logger_level(level: int | str | None) -> None:
-    """
-    Adjusts the logger's level. This function allows the logging level to be changed at runtime.
-
-    Parameters:
-    - verbose: int {0, 1, 2, 3} (default=2, INFO)
-        0: ERROR
-        1: WARNING
-        2: INFO
-        3: DEBUG
-    """
-    if level is not None:
-        for logger_name in logging.root.manager.loggerDict:
-            if logger_name.startswith("JobSpy:"):
-                logging.getLogger(logger_name).setLevel(level)
-    else:
-        raise LoggingError(level)
-
-
 def markdown_converter(description_html: str | None) -> str | None:
     if description_html is None:
         return None

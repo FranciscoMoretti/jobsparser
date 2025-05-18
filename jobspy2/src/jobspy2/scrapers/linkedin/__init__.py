@@ -13,6 +13,7 @@ import time
 from datetime import datetime
 from typing import Any
 from urllib.parse import unquote, urlparse, urlunparse, urlencode
+import logging
 
 import regex as re
 import requests
@@ -59,11 +60,17 @@ class LinkedInScraper(Scraper):
     band_delay = 4
     jobs_per_page = 25
 
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
         super().__init__(Site.LINKEDIN, proxies=proxies, ca_cert=ca_cert)
+
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = create_logger("LinkedIn")
+
         self.session = create_session(
             proxies=self.proxies,
             ca_cert=ca_cert,
@@ -82,10 +89,6 @@ class LinkedInScraper(Scraper):
         Scrapes LinkedIn for jobs with scraper_input criteria
         """
         self.scraper_input = scraper_input
-        if self.scraper_input.logger:
-            self.logger = self.scraper_input.logger
-        else:
-            self.logger = create_logger("LinkedInScraper")
         job_list: list[JobPost] = []
         seen_ids: set[str] = set()
         start = scraper_input.offset // 10 * 10 if scraper_input.offset else 0

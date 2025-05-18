@@ -14,6 +14,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any
+import logging
 
 import requests
 from bs4 import BeautifulSoup
@@ -43,11 +44,16 @@ class ZipRecruiterScraper(Scraper):
     base_url = "https://www.ziprecruiter.com"
     api_url = "https://api.ziprecruiter.com"
 
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
         """
         Initializes ZipRecruiterScraper with the ZipRecruiter job search url
         """
         super().__init__(Site.ZIP_RECRUITER, proxies=proxies)
+
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = create_logger("ZipRecruiter")
 
         self.scraper_input: ScraperInput | None = None
         self.session: requests.Session = create_session(proxies=proxies, ca_cert=ca_cert)
@@ -67,11 +73,6 @@ class ZipRecruiterScraper(Scraper):
         self.scraper_input = scraper_input
         job_list: list[JobPost] = []
         continue_token = None
-
-        if self.scraper_input.logger:
-            self.logger = self.scraper_input.logger
-        else:
-            self.logger = create_logger("ZipRecruiter")
 
         max_pages = math.ceil(scraper_input.results_wanted / self.jobs_per_page)
         for page in range(1, max_pages + 1):

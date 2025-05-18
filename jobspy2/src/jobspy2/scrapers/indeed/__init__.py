@@ -43,11 +43,16 @@ class IntervalError(ValueError):
 
 
 class IndeedScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
+    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
         """
         Initializes IndeedScraper with the Indeed API url
         """
         super().__init__(Site.INDEED, proxies=proxies)
+
+        if logger:
+            self.logger = logger
+        else:
+            self.logger = create_logger("Indeed")
 
         self.session = create_session(proxies=self.proxies, ca_cert=ca_cert, is_tls=False)
         self.scraper_input: ScraperInput | None = None
@@ -73,11 +78,6 @@ class IndeedScraper(Scraper):
         self.headers["indeed-co"] = self.api_country_code
         job_list: list[JobPost] = []
         page = 1
-
-        if self.scraper_input.logger:
-            self.logger = self.scraper_input.logger
-        else:
-            self.logger = create_logger("Indeed")
 
         cursor = None
 
