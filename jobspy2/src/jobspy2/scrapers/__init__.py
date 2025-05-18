@@ -60,17 +60,11 @@ class ScraperInput(BaseModel):
 
 
 class Scraper(ABC):
-    def __init__(self, site: Site, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None):
+    def __init__(self, site: Site, logger: logging.Logger, proxies: list[str] | str | None = None, ca_cert: str | None = None):
         self.site = site
         self.proxies = proxies
         self.ca_cert = ca_cert
-        if logger:
-            self.logger = logger
-        else:
-            # Import create_logger locally if not already available at module level for scrapers
-            # This assumes individual scrapers might not have imported it.
-            # A better place for this import might be at the top of this scrapers/__init__.py file.
-            self.logger = create_logger(site.value) # Default logger
+        self.logger = logger
 
     @abstractmethod
     def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...

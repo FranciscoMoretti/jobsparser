@@ -34,17 +34,12 @@ from .constants import async_param, headers_initial, headers_jobs
 
 
 class GoogleJobsScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
+    def __init__(self, logger: logging.Logger, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
         """
         Initializes Google Scraper with the Goodle jobs search url
         """
         site = Site(Site.GOOGLE)
-        super().__init__(site, proxies=proxies, ca_cert=ca_cert)
-
-        if logger:
-            self.logger = logger
-        else:
-            self.logger = create_logger("Google")
+        super().__init__(site, logger=logger, proxies=proxies, ca_cert=ca_cert)
 
         self.country: str | None = None
         self.session: requests.Session | None = None

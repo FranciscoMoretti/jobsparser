@@ -60,16 +60,11 @@ class LinkedInScraper(Scraper):
     band_delay = 4
     jobs_per_page = 25
 
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
+    def __init__(self, logger: logging.Logger, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
         """
         Initializes LinkedInScraper with the LinkedIn job search url
         """
-        super().__init__(Site.LINKEDIN, proxies=proxies, ca_cert=ca_cert)
-
-        if logger:
-            self.logger = logger
-        else:
-            self.logger = create_logger("LinkedIn")
+        super().__init__(Site.LINKEDIN, logger=logger, proxies=proxies, ca_cert=ca_cert)
 
         self.session = create_session(
             proxies=self.proxies,

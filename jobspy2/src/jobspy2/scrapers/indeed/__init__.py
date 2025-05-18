@@ -43,16 +43,11 @@ class IntervalError(ValueError):
 
 
 class IndeedScraper(Scraper):
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
+    def __init__(self, logger: logging.Logger, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
         """
         Initializes IndeedScraper with the Indeed API url
         """
-        super().__init__(Site.INDEED, proxies=proxies)
-
-        if logger:
-            self.logger = logger
-        else:
-            self.logger = create_logger("Indeed")
+        super().__init__(Site.INDEED, logger=logger, proxies=proxies, ca_cert=ca_cert)
 
         self.session = create_session(proxies=self.proxies, ca_cert=ca_cert, is_tls=False)
         self.scraper_input: ScraperInput | None = None
@@ -63,7 +58,6 @@ class IndeedScraper(Scraper):
         self.api_country_code: str | None = None
         self.base_url: str | None = None
         self.api_url: str = "https://apis.indeed.com/graphql"
-        self.logger: logging.Logger | None = None
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """

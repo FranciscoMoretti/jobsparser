@@ -218,7 +218,7 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
                 proxies=list(proxies) if proxies else None,
                 hours_old=hours_old,
                 linkedin_experience_levels=list(linkedin_experience_level) if linkedin_experience_level else None,
-                logger=site_logger, # Pass the configured logger for this site
+                logger=site_logger,
                 batch_size=batch_size,
                 sleep_time=sleep_time,
                 max_retries=max_retries,
