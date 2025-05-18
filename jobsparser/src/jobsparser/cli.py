@@ -4,6 +4,7 @@ import pandas as pd
 import os
 import time
 import importlib.metadata
+import logging
 
 # Function to get version
 def get_version(ctx, param, value):
@@ -40,10 +41,20 @@ def get_version(ctx, param, value):
 @click.option('--hours-old', default=None, help='Hours old for job search')
 @click.option('--output-dir', default='data', help='Directory to save output CSV')
 @click.option('--linkedin-experience-level', multiple=True, type=click.Choice([level.value for level in LinkedInExperienceLevel]), default=None, help='Experience levels to search for on LinkedIn')
+@click.option('-v', '--verbose', count=True, help="Verbosity level: -v for DEBUG. Default is INFO.", default=0)
 def main(search_term, location, site, results_wanted, distance, job_type, country,
-         fetch_description, proxies, batch_size, sleep_time, max_retries, hours_old, output_dir, linkedin_experience_level):
+         fetch_description, proxies, batch_size, sleep_time, max_retries, hours_old, output_dir, linkedin_experience_level, verbose):
     """Scrape jobs from various job sites with customizable parameters."""
     
+    # Map Click's count verbose to the levels used by set_logger_level
+    # 0 (default from click, no -v): WARNING
+    # 1 (-v): DEBUG
+    if verbose == 0: # No -v flags
+        log_level = logging.INFO # INFO in set_logger_level
+    elif verbose == 1: # -v
+        log_level = logging.DEBUG # DEBUG in set_logger_level
+
+
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
@@ -73,7 +84,8 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
                     offset=offset,
                     proxies=proxies,
                     hours_old=hours_old,
-                    linkedin_experience_levels=linkedin_experience_level
+                    linkedin_experience_levels=linkedin_experience_level,
+                    log_level=log_level
                 )
 
                 all_jobs.extend(jobs.to_dict("records"))

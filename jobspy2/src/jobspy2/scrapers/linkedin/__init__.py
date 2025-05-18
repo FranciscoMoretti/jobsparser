@@ -12,7 +12,7 @@ import random
 import time
 from datetime import datetime
 from typing import Any
-from urllib.parse import unquote, urlparse, urlunparse
+from urllib.parse import unquote, urlparse, urlunparse, urlencode
 
 import regex as re
 import requests
@@ -120,9 +120,13 @@ class LinkedInScraper(Scraper):
         if not self.scraper_input:
             return None
         params = self._build_search_params(start, seconds_old)
+        query_string = urlencode(params)
+        full_url = f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?{query_string}"
         try:
+            logger.debug(f"Getting Linkedin URL: {full_url}")
+
             response = self.session.get(
-                f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?",
+                f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search",
                 params=params,
                 timeout=10,
             )

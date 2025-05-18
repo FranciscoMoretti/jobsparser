@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
 
 import pandas as pd
 
@@ -129,7 +130,7 @@ def scrape_jobs(
     offset: int | None = 0,
     hours_old: int | None = None,
     enforce_annual_salary: bool = False,
-    verbose: int = 2,
+    log_level: int | str = logging.INFO,
     **kwargs,
 ) -> pd.DataFrame:
     """
@@ -143,7 +144,7 @@ def scrape_jobs(
         Site.GLASSDOOR: GlassdoorScraper,
         Site.GOOGLE: GoogleJobsScraper,
     }
-    set_logger_level(verbose)
+    set_logger_level(log_level)
 
     job_type_enum = _get_enum_from_value(job_type)
     country_enum = Country.from_string(country_indeed)

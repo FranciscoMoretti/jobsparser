@@ -140,23 +140,23 @@ class LoggingError(Exception):
         super().__init__(self.message)
 
 
-def set_logger_level(verbose: int = 2) -> None:
+def set_logger_level(level: int | str | None) -> None:
     """
     Adjusts the logger's level. This function allows the logging level to be changed at runtime.
 
     Parameters:
-    - verbose: int {0, 1, 2} (default=2, all logs)
+    - verbose: int {0, 1, 2, 3} (default=2, INFO)
+        0: ERROR
+        1: WARNING
+        2: INFO
+        3: DEBUG
     """
-    if verbose is None:
-        return
-    level_name = {2: "INFO", 1: "WARNING", 0: "ERROR"}.get(verbose, "INFO")
-    level = getattr(logging, level_name.upper(), None)
     if level is not None:
         for logger_name in logging.root.manager.loggerDict:
             if logger_name.startswith("JobSpy:"):
                 logging.getLogger(logger_name).setLevel(level)
     else:
-        raise LoggingError(level_name)
+        raise LoggingError(level)
 
 
 def markdown_converter(description_html: str | None) -> str | None:
