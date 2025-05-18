@@ -7,6 +7,7 @@ This module contains routines to scrape Indeed.
 
 from __future__ import annotations
 
+import logging
 import math
 from datetime import datetime
 from typing import Any
@@ -30,7 +31,6 @@ from ..utils import (
 )
 from .constants import api_headers, job_search_query
 
-logger = create_logger("Indeed")
 
 
 class IntervalError(ValueError):
@@ -58,6 +58,7 @@ class IndeedScraper(Scraper):
         self.api_country_code: str | None = None
         self.base_url: str | None = None
         self.api_url: str = "https://apis.indeed.com/graphql"
+        self.logger: logging.Logger | None = None
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -73,13 +74,18 @@ class IndeedScraper(Scraper):
         job_list: list[JobPost] = []
         page = 1
 
+        if self.scraper_input.logger:
+            self.logger = self.scraper_input.logger
+        else:
+            self.logger = create_logger("Indeed")
+
         cursor = None
 
         while len(self.seen_urls) < scraper_input.results_wanted + scraper_input.offset:
-            logger.info(f"search page: {page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}")
+            self.logger.info(f"search page: {page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}")
             jobs, cursor = self._scrape_page(cursor)
             if not jobs:
-                logger.info(f"found no jobs on page: {page}")
+                self.logger.info(f"found no jobs on page: {page}")
                 break
             job_list += jobs
             page += 1
@@ -120,7 +126,7 @@ class IndeedScraper(Scraper):
             timeout=10,
         )
         if not response.ok:
-            logger.info(
+            self.logger.info(
                 f"responded with status code: {response.status_code} (submit GitHub issue if this appears to be a bug)"
             )
             return jobs, new_cursor

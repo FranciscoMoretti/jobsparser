@@ -6,41 +6,22 @@ import time
 import importlib.metadata
 import logging
 import concurrent.futures
-import threading # Added for threading.local
 
-# Thread-local storage for logging context
-log_context = threading.local()
+# Custom Logging Handler using Click
+class ClickColorHandler(logging.Handler):
+    def __init__(self, prefix: str, color: str):
+        super().__init__()
+        self.prefix = prefix
+        self.color = color
 
-class SiteContextFormatter(logging.Formatter):
-    """A custom logging formatter that adds a colored prefix based on thread-local context."""
-    
-    # Store the original format string and datefmt
-    def __init__(self, fmt=None, datefmt=None, style='%', validate=True, *, defaults=None):
-        super().__init__(fmt, datefmt, style, validate, defaults=defaults)
-        self._original_fmt = fmt
-        self._original_datefmt = datefmt
-
-    def format(self, record):
-        # Standard formatting first
-        # Temporarily remove our custom attributes if they exist, to avoid issues with super().format()
-        prefix_attr = hasattr(record, 'custom_prefix')
-        color_attr = hasattr(record, 'custom_color')
-        
-        # Use the original format string passed during __init__
-        # Create a temporary formatter with the original settings to format the base message
-        temp_formatter = logging.Formatter(self._original_fmt, self._original_datefmt)
-        log_string = temp_formatter.format(record)
-
-        # Get prefix and color from thread-local context
-        prefix = getattr(log_context, 'prefix', None)
-        color = getattr(log_context, 'color', 'reset')
-
-        if prefix:
-            return click.style(f"{prefix}{log_string}", fg=color)
-        return log_string
-
-# Global logger, can be configured in main
-logger = logging.getLogger()
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            # Determine if error for click.echo's err=True
+            is_error = record.levelno >= logging.ERROR
+            click.echo(click.style(f"{self.prefix}{msg}", fg=self.color), err=is_error)
+        except Exception:
+            self.handleError(record)
 
 # Function to get version
 def get_version(ctx, param, value):
@@ -65,54 +46,16 @@ def _scrape_single_site(
     proxies: list[str] | None,
     hours_old: int | None,
     linkedin_experience_levels: list | None,
-    # log_level is for jobspy2 internal logging level,
-    # our handler will filter based on main verbose setting
-    jobspy_log_level: int, 
+    jobspy_log_level: int, # log_level for jobspy2 internal, logger for this function's direct logging
+    logger: logging.Logger, # Main logger for this function's operations
     batch_size: int,
     sleep_time: int,
     max_retries: int,
-    logging_prefix: str, # Prefix is now mandatory for context
-    logging_color: str  # Color is now mandatory for context
 ):
     """Scrapes jobs for a single site with retries, batching, and sleep."""
-    # Set context for the logger in this thread
-    log_context.prefix = logging_prefix
-    log_context.color = logging_color
-
-    # Configure the specific JobSpy logger for this site
-    # jobspy2.scrapers.utils.create_logger uses f"JobSpy:{name}" where name is capitalized site value
-    # e.g. JobSpy:Linkedin, JobSpy:Indeed, JobSpy:ZipRecruiter
-    jobspy_logger_name_segment = site_name.capitalize()
-    if site_name.lower() == "zip_recruiter": # jobspy2 has a special case for ZipRecruiter capitalization
-        jobspy_logger_name_segment = "ZipRecruiter"
-    
-    jobspy_site_logger_name = f"JobSpy:{jobspy_logger_name_segment}"
-    jobspy_site_logger = logging.getLogger(jobspy_site_logger_name)
-
-    # Remove any default handlers jobspy2 might have added to this specific logger
-    for h in list(jobspy_site_logger.handlers):
-        jobspy_site_logger.removeHandler(h)
-    
-    # Add our custom formatted handler to this specific jobspy logger
-    # Use the same formatter class but create a new instance to respect thread context
-    # The formatter's format string should match what jobspy2's default was, or our desired one.
-    # Let's use the one defined for our root handler for consistency of base message format.
-    # The root handler's formatter string is `%(asctime)s - %(levelname)s - %(message)s`
-    # If jobspy's own formatter was '%(asctime)s - %(levelname)s - %(name)s - %(message)s', using %(name)s is fine.
-    site_handler = logging.StreamHandler()
-    # The formatter for SiteContextFormatter uses its _original_fmt for the base log string
-    # which is set when the root handler's formatter is created. So it will be consistent.
-    site_formatter = SiteContextFormatter(fmt='%(asctime)s - %(levelname)s - %(name)s - %(message)s', datefmt='%H:%M:%S')
-    site_handler.setFormatter(site_formatter)
-    jobspy_site_logger.addHandler(site_handler)
-    jobspy_site_logger.setLevel(jobspy_log_level)
-    jobspy_site_logger.propagate = False # We've handled it; prevent double logging if root also had a simple handler for some reason
-
     offset = 0
     site_all_jobs = []
     found_all_available_jobs_for_site = False
-
-    # Removed echo_style, will use logger.info, logger.error directly
 
     while len(site_all_jobs) < results_wanted_for_site and not found_all_available_jobs_for_site:
         retry_count = 0
@@ -133,7 +76,8 @@ def _scrape_single_site(
                     proxies=proxies,
                     hours_old=hours_old,
                     linkedin_experience_levels=linkedin_experience_levels,
-                    log_level=jobspy_log_level 
+                    log_level=jobspy_log_level, # For jobspy's internal configuration of its own loggers
+                    logger=logger # Pass the parent logger for jobspy to use
                 )
                 if jobs_df_scraped is None or jobs_df_scraped.empty:
                     new_jobs = []
@@ -142,7 +86,7 @@ def _scrape_single_site(
                 
                 site_all_jobs.extend(new_jobs)
                 offset += iteration_results_wanted
-  
+
                 if len(new_jobs) < iteration_results_wanted:
                     logger.info(f"Scraped {len(site_all_jobs)} jobs.")
                     logger.info(f"No more jobs available. Wanted {results_wanted_for_site} jobs, got {len(site_all_jobs)}")
@@ -151,7 +95,7 @@ def _scrape_single_site(
 
                 if len(site_all_jobs) >= results_wanted_for_site:
                     logger.info(f"Reached desired {len(site_all_jobs)} jobs for this site.")
-                    break 
+                    break
                     
                 logger.info(f"Scraped {len(site_all_jobs)} jobs.")
                 current_sleep_duration = sleep_time 
@@ -162,7 +106,7 @@ def _scrape_single_site(
             except Exception as e:
                 logger.error(f"Error scraping: {e}", exc_info=True) # Add exc_info for traceback
                 retry_count += 1
-                sleep_duration_on_error = sleep_time * (retry_count + 1) 
+                sleep_duration_on_error = sleep_time * (retry_count + 1) # Exponential backoff
                 logger.warning(f"Sleeping for {sleep_duration_on_error} seconds before retry (attempt {retry_count}/{max_retries})")
                 time.sleep(sleep_duration_on_error)
                 if retry_count >= max_retries:
@@ -171,9 +115,6 @@ def _scrape_single_site(
                     break 
     
     logger.info(f"Finished scraping. Total jobs found: {len(site_all_jobs)}")
-    # Clear context for this thread
-    delattr(log_context, 'prefix')
-    delattr(log_context, 'color')
     return site_all_jobs
 
 @click.command()
@@ -187,8 +128,8 @@ def _scrape_single_site(
 )
 @click.option('--search-term', required=True, help='Job search query')
 @click.option('--location', required=True, help='Job location')
-@click.option('--site', multiple=True, type=click.Choice(['linkedin', 'indeed', 'glassdoor']), default=['linkedin'], help='Job sites to search')
-@click.option('--results-wanted', default=100, help='Total number of results to fetch')
+@click.option('--site', multiple=True, type=click.Choice(['linkedin', 'indeed', 'glassdoor', 'zip_recruiter', 'google']), default=['linkedin'], help='Job sites to search')
+@click.option('--results-wanted', default=100, help='Total number of results to fetch per site')
 @click.option('--distance', default=25, help='Distance radius for job search')
 @click.option('--job-type', type=click.Choice(['fulltime', 'parttime', 'contract', 'internship']), default='fulltime', help='Type of job')
 @click.option('--country', default='UK', help='Country code for Indeed search')
@@ -197,41 +138,25 @@ def _scrape_single_site(
 @click.option('--batch-size', default=30, help='Number of results to fetch in each batch')
 @click.option('--sleep-time', default=100, help='Base sleep time between batches in seconds')
 @click.option('--max-retries', default=3, help='Maximum retry attempts per batch')
-@click.option('--hours-old', default=None, help='Hours old for job search')
+@click.option('--hours-old', default=None, type=int, help='Hours old for job search')
 @click.option('--output-dir', default='data', help='Directory to save output CSV')
-@click.option('--linkedin-experience-level', multiple=True, type=click.Choice([level.value for level in LinkedInExperienceLevel]), default=None, help='Experience levels to search for on LinkedIn')
-@click.option('-v', '--verbose', count=True, help="Verbosity level: -v for INFO, -vv for DEBUG. Default is WARNING.", default=0)
+@click.option('--linkedin-experience-level', multiple=True, type=click.Choice([level.value for level in LinkedInExperienceLevel]), default=None, help='Experience levels for LinkedIn')
+@click.option('-v', '--verbose', count=True, help="Verbosity: -v for DEBUG, default INFO for this script's logs.", default=0)
 def main(search_term, location, site, results_wanted, distance, job_type, country,
          fetch_description, proxies, batch_size, sleep_time, max_retries, hours_old, output_dir, linkedin_experience_level, verbose):
     """Scrape jobs from various job sites with customizable parameters."""
     
-    # Configure logging
-    # Remove existing handlers to avoid duplicate messages if script is re-run in same interpreter
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-        
-    # Root handler - primarily for logs from this script itself, or other libs propagating to root
-    root_handler = logging.StreamHandler()
-    # Pass the desired format string and datefmt to the constructor here
-    root_formatter = SiteContextFormatter(fmt='%(asctime)s - %(levelname)s - %(message)s', datefmt='%H:%M:%S')
-    root_handler.setFormatter(root_formatter)
-    logger.addHandler(root_handler)
+    # Determine overall log level for this script's loggers
+    if verbose == 0: # No -v flags
+        cli_log_level = logging.INFO
+    elif verbose >= 1: # -v or -vv etc
+        cli_log_level = logging.DEBUG
+    
+    # This log_level is for jobspy2's internal configuration if it needs to set levels on its own loggers
+    # We are passing our own configured logger, so jobspy2 should ideally use that.
+    # jobspy2's set_logger_level might still be called internally by it.
+    jobspy_internal_log_level = logging.DEBUG if verbose >=1 else logging.INFO
 
-    # jobspy2_log_level will be passed to scrape_jobs
-    # logger.setLevel will control overall output
-    jobspy2_internal_log_level = logging.INFO # Default for jobspy2
-    if verbose == 0: # No -v: Our main logger shows WARNING and above
-        logger.setLevel(logging.WARNING)
-        jobspy2_internal_log_level = logging.WARNING # Tell jobspy2 to also be less verbose
-    elif verbose == 1: # -v: Our main logger shows INFO and above
-        logger.setLevel(logging.INFO)
-        jobspy2_internal_log_level = logging.INFO
-    elif verbose >= 2: # -vv or more: Our main logger shows DEBUG and above
-        logger.setLevel(logging.DEBUG)
-        jobspy2_internal_log_level = logging.DEBUG # Tell jobspy2 to be verbose
-
-    # For jobspy2, it seems it uses the integer log levels directly.
-    # We're setting our handler's level and also passing a suggested level to jobspy2.
 
     os.makedirs(output_dir, exist_ok=True)
     
@@ -246,70 +171,86 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
     site_colors = ["cyan", "green", "yellow", "magenta", "blue", "red"]
 
     if not site:
-        # Use click.echo for direct user feedback not part of threaded logging
         click.echo("No job sites specified. Exiting.")
         return
 
-    # Use logger for operational messages in main thread if desired, or click.echo for CLI interaction style
-    logger.info(f"Starting job scraping for {len(site)} site(s).")
+    # Basic formatter for our handlers
+    formatter = logging.Formatter('%(message)s') # Simple message, prefix is handled by ClickColorHandler
+    root_logger = logging.getLogger("jobsparser.cli.main_summary")
+    root_logger.setLevel(cli_log_level)
+    # Final summary (could use a general/root logger for this)
+    if not root_logger.hasHandlers(): # Basic handler for summary if none exists
+        summary_handler = logging.StreamHandler()
+        summary_handler.setFormatter(logging.Formatter('[MAIN] %(message)s')) # Default format
+        root_logger.addHandler(summary_handler)
+        root_logger.propagate = False
+
+
+    root_logger.info("Starting job scraping...")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(site)) as executor:
-        future_to_site = {}
-        for i, site_name in enumerate(site):
+        future_to_site_logger_map = {}
+        for i, site_name_str in enumerate(site):
             color_index = i % len(site_colors)
             current_color = site_colors[color_index]
-            prefix = f"[{site_name.upper()}] "
+            prefix = f"[{site_name_str.upper()}] "
             
-            # This initial message can be a direct click.echo as it's a submission status
-            click.echo(click.style(f"{prefix}Submitting task to scrape {results_wanted} jobs.", fg=current_color))
+            # Create and configure a logger for this specific site
+            site_logger_name = f"jobsparser.cli.{site_name_str}"
+            site_logger = logging.getLogger(site_logger_name)
+            site_logger.setLevel(cli_log_level) # Set level based on verbosity
+
+            # Clear existing handlers to prevent duplication if re-run
+            if site_logger.hasHandlers():
+                site_logger.handlers.clear()
+
+            handler = ClickColorHandler(prefix=prefix, color=current_color)
+            handler.setFormatter(formatter)
+            site_logger.addHandler(handler)
+            site_logger.propagate = False # Don't send to root logger if we have specific handling
+
+            site_logger.info(f"Submitting task to scrape {results_wanted} jobs.")
             
             future = executor.submit(
                 _scrape_single_site,
-                site_name=site_name,
+                site_name=site_name_str,
                 search_term=search_term,
                 location=location,
                 distance=distance,
                 linkedin_fetch_description=fetch_description,
                 job_type=job_type,
                 country_indeed=country,
-                results_wanted_for_site=results_wanted, 
+                results_wanted_for_site=results_wanted,
                 proxies=list(proxies) if proxies else None,
-                hours_old=int(hours_old) if hours_old else None,
+                hours_old=hours_old, # Already int from click option
                 linkedin_experience_levels=list(linkedin_experience_level) if linkedin_experience_level else None,
-                jobspy_log_level=jobspy2_internal_log_level, 
+                jobspy_log_level=jobspy_internal_log_level, # For jobspy2 internal setup
+                logger=site_logger, # Pass the configured logger for this site
                 batch_size=batch_size,
                 sleep_time=sleep_time,
                 max_retries=max_retries,
-                logging_prefix=prefix,
-                logging_color=current_color
             )
-            future_to_site[future] = (site_name, current_color, prefix) # Store color and prefix for completion message
+            future_to_site_logger_map[future] = site_logger
 
-        for future in concurrent.futures.as_completed(future_to_site):
-            site_name_completed, completed_color, completed_prefix = future_to_site[future]
+        for future in concurrent.futures.as_completed(future_to_site_logger_map):
+            completed_site_logger = future_to_site_logger_map[future]
             try:
                 jobs_from_site = future.result()
                 all_jobs_collected.extend(jobs_from_site)
-                # This completion message can also be a direct click.echo or styled logger message
-                # Using click.echo here to maintain the style for overall progress updates
-                click.echo(click.style(f"{completed_prefix}Completed. Found {len(jobs_from_site)} jobs.", fg=completed_color))
+                completed_site_logger.info(f"Completed. Found {len(jobs_from_site)} jobs.")
             except Exception as exc:
-                # Log exceptions from futures using the root logger
-                # The SiteContextFormatter on the root_handler won't have thread-specific prefix/color
-                # So, we manually add the prefix for context here.
-                # completed_prefix is available here
-                logger.error(f"{completed_prefix}Task for site generated an exception: {exc}", exc_info=True)
+                completed_site_logger.error(f"Task generated an exception: {exc}", exc_info=True)
     
+
+
+
     if not all_jobs_collected:
-        click.echo("No jobs found after scraping all sites. Check parameters or site availability.") # User feedback
-        logger.warning("No jobs found after scraping all sites.") # Log entry
+        root_logger.warning("No jobs found after scraping all sites. Check parameters or site availability.")
         return
 
     jobs_df = pd.DataFrame(all_jobs_collected)
     jobs_df.to_csv(csv_filename, index=False)
-    # Final user feedback
-    click.echo(f"Successfully saved {len(all_jobs_collected)} jobs from {len(site)} site(s) to {csv_filename}")
-    logger.info(f"Successfully saved {len(all_jobs_collected)} jobs from {len(site)} site(s) to {csv_filename}")
+    root_logger.info(f"Successfully saved {len(all_jobs_collected)} jobs from {len(site)} site(s) to {csv_filename}")
 
 if __name__ == '__main__':
     main() 

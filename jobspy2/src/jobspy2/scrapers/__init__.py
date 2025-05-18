@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import logging
+from .utils import create_logger 
 
 from ..jobs import (
     BaseModel,
@@ -54,12 +56,21 @@ class ScraperInput(BaseModel):
     results_wanted: int = 15
     hours_old: int | None = None
 
+    logger: logging.Logger | None = None
+
 
 class Scraper(ABC):
-    def __init__(self, site: Site, proxies: list[str] | str | None = None, ca_cert: str | None = None):
+    def __init__(self, site: Site, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None):
         self.site = site
         self.proxies = proxies
         self.ca_cert = ca_cert
+        if logger:
+            self.logger = logger
+        else:
+            # Import create_logger locally if not already available at module level for scrapers
+            # This assumes individual scrapers might not have imported it.
+            # A better place for this import might be at the top of this scrapers/__init__.py file.
+            self.logger = create_logger(site.value) # Default logger
 
     @abstractmethod
     def scrape(self, scraper_input: ScraperInput) -> JobResponse: ...

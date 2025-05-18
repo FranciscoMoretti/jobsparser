@@ -37,7 +37,6 @@ from ..utils import (
 )
 from .constants import headers
 
-logger = create_logger("ZipRecruiter")
 
 
 class ZipRecruiterScraper(Scraper):
@@ -69,13 +68,18 @@ class ZipRecruiterScraper(Scraper):
         job_list: list[JobPost] = []
         continue_token = None
 
+        if self.scraper_input.logger:
+            self.logger = self.scraper_input.logger
+        else:
+            self.logger = create_logger("ZipRecruiter")
+
         max_pages = math.ceil(scraper_input.results_wanted / self.jobs_per_page)
         for page in range(1, max_pages + 1):
             if len(job_list) >= scraper_input.results_wanted:
                 break
             if page > 1:
                 time.sleep(self.delay)
-            logger.info(f"search page: {page} / {max_pages}")
+            self.logger.info(f"search page: {page} / {max_pages}")
             jobs_on_page, continue_token = self._find_jobs_in_page(scraper_input, continue_token)
             if jobs_on_page:
                 job_list.extend(jobs_on_page)
@@ -106,13 +110,13 @@ class ZipRecruiterScraper(Scraper):
                 else:
                     err = f"ZipRecruiter response status code {res.status_code}"
                     err += f" with response: {res.text}"  # ZipRecruiter likely not available in EU
-                logger.error(err)
+                self.logger.error(err)
                 return jobs_list, ""
         except Exception as e:
             if "Proxy responded with" in str(e):
-                logger.exception("ZipRecruiter: Bad proxy")
+                self.logger.exception("ZipRecruiter: Bad proxy")
             else:
-                logger.exception("ZipRecruiter error")
+                self.logger.exception("ZipRecruiter error")
             return jobs_list, ""
 
         res_data = res.json()

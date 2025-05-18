@@ -8,6 +8,7 @@ This module contains routines to scrape Glassdoor.
 from __future__ import annotations
 
 import json
+import logging
 import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
@@ -34,7 +35,6 @@ from ..utils import (
 )
 from .constants import fallback_token, headers, query_template
 
-logger = create_logger("Glassdoor")
 
 
 class GlassdoorAPIError(GlassdoorException):
@@ -74,6 +74,11 @@ class GlassdoorScraper(Scraper):
         self.scraper_input.results_wanted = min(900, scraper_input.results_wanted)
         self.base_url = self.scraper_input.country.get_glassdoor_url()
 
+        if self.scraper_input.logger:
+            self.logger = self.scraper_input.logger
+        else:
+            self.logger = create_logger("Glassdoor")
+
         self.session = create_session(proxies=self.proxies, ca_cert=self.ca_cert, is_tls=True, has_retry=True)
         token = self._get_csrf_token()
         headers["gd-csrf-token"] = token if token else fallback_token
@@ -81,7 +86,7 @@ class GlassdoorScraper(Scraper):
 
         location_id, location_type = self._get_location(scraper_input.location, scraper_input.is_remote)
         if location_type is None:
-            logger.error("Glassdoor: location not parsed")
+            self.logger.error("Glassdoor: location not parsed")
             return JobResponse(jobs=[])
         job_list: list[JobPost] = []
         cursor = None
@@ -90,7 +95,7 @@ class GlassdoorScraper(Scraper):
         tot_pages = (scraper_input.results_wanted // self.jobs_per_page) + 2
         range_end = min(tot_pages, self.max_pages + 1)
         for page in range(range_start, range_end):
-            logger.info(f"search page: {page} / {range_end - 1}")
+            self.logger.info(f"search page: {page} / {range_end - 1}")
             try:
                 jobs, cursor = self._fetch_jobs_page(scraper_input, location_id, location_type, page, cursor)
                 job_list.extend(jobs)
@@ -98,7 +103,7 @@ class GlassdoorScraper(Scraper):
                     job_list = job_list[: scraper_input.results_wanted]
                     break
             except Exception:
-                logger.exception("Glassdoor error")
+                self.logger.exception("Glassdoor error")
                 break
         return JobResponse(jobs=job_list)
 
@@ -133,7 +138,7 @@ class GlassdoorScraper(Scraper):
             )
             res_json = self._raise_for_status(response)
         except Exception:
-            logger.exception("Glassdoor error")
+            self.logger.exception("Glassdoor error")
             return jobs, None
 
         jobs_data = res_json["data"]["jobListings"]["jobListings"]
@@ -196,7 +201,7 @@ class GlassdoorScraper(Scraper):
         try:
             description = self._fetch_job_description(job_id)
         except Exception:
-            logger.exception("Failed to fetch job description")
+            self.logger.exception("Failed to fetch job description")
 
         company_url = f"{self.base_url}Overview/W-EI_IE{company_id}.htm"
         company_logo = job_data["jobview"].get("overview", {}).get("squareLogoUrl", None)
@@ -280,7 +285,7 @@ class GlassdoorScraper(Scraper):
                 raise GlassdoorLocationError(location)
             return locations[0]["locationId"], locations[0]["locationType"]
         except Exception as e:
-            logger.error(f"Failed to get location: {e}")
+            self.logger.error(f"Failed to get location: {e}")
             raise GlassdoorLocationError(location) from e
 
     def _add_payload(

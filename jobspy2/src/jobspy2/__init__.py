@@ -131,6 +131,7 @@ def scrape_jobs(
     hours_old: int | None = None,
     enforce_annual_salary: bool = False,
     log_level: int | str = logging.INFO,
+    logger: logging.Logger | None = None,
     **kwargs,
 ) -> pd.DataFrame:
     """
@@ -167,15 +168,25 @@ def scrape_jobs(
         linkedin_experience_levels=linkedin_experience_levels,
         offset=offset,
         hours_old=hours_old,
+        logger=logger,
     )
 
     def scrape_site(site: Site) -> tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
+        
+        # Determine logger for this specific scraper instance
+        # The logger passed to scrape_jobs (and thus to ScraperInput) is the primary one.
+        # If none, fallback to creating a logger for this specific site.
+        logger_for_scraper = scraper_input.logger if scraper_input.logger else create_logger(site.value)
+
         scraper = scraper_class(proxies=proxies, ca_cert=ca_cert)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
-        cap_name = site.value.capitalize()
-        site_name = "ZipRecruiter" if cap_name == "Zip_recruiter" else cap_name
-        create_logger(site_name).info("finished scraping")
+        
+        # The scraper itself should use its self.logger for its internal logging.
+        # The message about "finished scraping" can be logged by the scraper or here.
+        # Using the same logger ensures consistency.
+        site_name_display = site.value.capitalize().replace("_", "") # e.g. ZipRecruiter
+        logger_for_scraper.info(f"{site_name_display} scrape processing completed by scrape_site wrapper.")
         return site.value, scraped_data
 
     site_to_jobs_dict = {}

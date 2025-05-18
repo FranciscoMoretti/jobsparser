@@ -4,7 +4,15 @@ from datetime import date
 from enum import Enum
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel as PydanticBaseModel
+
+
+# Define our BaseModel inheriting from Pydantic's, with custom config
+class BaseModel(PydanticBaseModel):
+    class Config:
+        arbitrary_types_allowed = True
+        # You might want to add other useful Pydantic configs here if needed globally,
+        # e.g., validate_assignment = True, extra = 'forbid', etc.
 
 
 class JobType(Enum):

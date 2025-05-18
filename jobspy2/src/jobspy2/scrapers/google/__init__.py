@@ -8,6 +8,7 @@ This module contains routines to scrape Google.
 from __future__ import annotations
 
 import json
+import logging
 import math
 import re
 from datetime import datetime, timedelta
@@ -30,7 +31,6 @@ from ..utils import (
 )
 from .constants import async_param, headers_initial, headers_jobs
 
-logger = create_logger("Google")
 
 
 class GoogleJobsScraper(Scraper):
@@ -48,6 +48,7 @@ class GoogleJobsScraper(Scraper):
         self.seen_urls: set[str] = set()
         self.url: str = "https://www.google.com/search"
         self.jobs_url: str = "https://www.google.com/async/callback:550"
+        self.logger: logging.Logger | None = None
 
     def scrape(self, scraper_input: ScraperInput) -> JobResponse:
         """
@@ -58,23 +59,28 @@ class GoogleJobsScraper(Scraper):
         self.scraper_input = scraper_input
         self.scraper_input.results_wanted = min(900, scraper_input.results_wanted)
 
+        if self.scraper_input.logger:
+            self.logger = self.scraper_input.logger
+        else:
+            self.logger = create_logger("Google")
+
         self.session = create_session(proxies=self.proxies, ca_cert=self.ca_cert, is_tls=False, has_retry=True)
         forward_cursor, job_list = self._get_initial_cursor_and_jobs()
         if forward_cursor is None:
-            logger.warning("initial cursor not found, try changing your query or there was at most 10 results")
+            self.logger.warning("initial cursor not found, try changing your query or there was at most 10 results")
             return JobResponse(jobs=job_list)
 
         page = 1
 
         while len(self.seen_urls) < scraper_input.results_wanted + scraper_input.offset and forward_cursor:
-            logger.info(f"search page: {page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}")
+            self.logger.info(f"search page: {page} / {math.ceil(scraper_input.results_wanted / self.jobs_per_page)}")
             try:
                 jobs, forward_cursor = self._get_jobs_next_page(forward_cursor)
             except Exception:
-                logger.exception(f"failed to get jobs on page: {page}")
+                self.logger.exception(f"failed to get jobs on page: {page}")
                 break
             if not jobs:
-                logger.info(f"found no jobs on page: {page}")
+                self.logger.info(f"found no jobs on page: {page}")
                 break
             job_list += jobs
             page += 1
@@ -133,7 +139,7 @@ class GoogleJobsScraper(Scraper):
         match_fc = re.search(pattern_fc, response.text)
         data_async_fc = match_fc.group(1) if match_fc else None
 
-        jobs_raw = self._find_job_info_initial_page(response.text)
+        jobs_raw = self._find_job_info_initial_page(response.text, self.logger)
         jobs: list[JobPost] = []
         for job_raw in jobs_raw:
             job_post = self._parse_job(job_raw)
@@ -228,7 +234,7 @@ class GoogleJobsScraper(Scraper):
         return None
 
     @staticmethod
-    def _find_job_info_initial_page(html_text: str) -> list[Any]:
+    def _find_job_info_initial_page(html_text: str, logger: logging.Logger) -> list[Any]:
         pattern = '520084652":(' + r"\[.*?\]\s*])\s*}\s*]\s*]\s*]"
         results: list[Any] = []
         matches = re.finditer(pattern, html_text)

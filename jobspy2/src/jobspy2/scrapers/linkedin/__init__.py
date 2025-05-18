@@ -41,7 +41,6 @@ from ..utils import (
 )
 from .constants import headers
 
-logger = create_logger("LinkedIn")
 
 # Map from experience level to the number
 experience_level_map: dict[LinkedInExperienceLevel, str] = {
@@ -83,6 +82,10 @@ class LinkedInScraper(Scraper):
         Scrapes LinkedIn for jobs with scraper_input criteria
         """
         self.scraper_input = scraper_input
+        if self.scraper_input.logger:
+            self.logger = self.scraper_input.logger
+        else:
+            self.logger = create_logger("LinkedInScraper")
         job_list: list[JobPost] = []
         seen_ids: set[str] = set()
         start = scraper_input.offset // 10 * 10 if scraper_input.offset else 0
@@ -91,7 +94,7 @@ class LinkedInScraper(Scraper):
 
         while self._should_continue_search(job_list, start):
             request_count += 1
-            logger.info(f"search page: {request_count} / {math.ceil(scraper_input.results_wanted / 10)}")
+            self.logger.info(f"search page: {request_count} / {math.ceil(scraper_input.results_wanted / 10)}")
 
             response = self._make_search_request(start, seconds_old)
             if not response:
@@ -123,7 +126,7 @@ class LinkedInScraper(Scraper):
         query_string = urlencode(params)
         full_url = f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search?{query_string}"
         try:
-            logger.debug(f"Getting Linkedin URL: {full_url}")
+            self.logger.debug(f"Getting Linkedin URL: {full_url}")
 
             response = self.session.get(
                 f"{self.base_url}/jobs-guest/jobs/api/seeMoreJobPostings/search",
@@ -136,15 +139,15 @@ class LinkedInScraper(Scraper):
                     if response.status_code == 429
                     else f"LinkedIn response status code {response.status_code} - {response.text}"
                 )
-                logger.error(err)
+                self.logger.error(err)
                 return None
             else:
                 return response
         except Exception as e:
             if "Proxy responded with" in str(e):
-                logger.exception("LinkedIn: Bad proxy")
+                self.logger.exception("LinkedIn: Bad proxy")
             else:
-                logger.exception("LinkedIn error")
+                self.logger.exception("LinkedIn error")
             return None
 
     def _build_search_params(self, start: int, seconds_old: int | None) -> dict[str, Any]:
@@ -243,7 +246,7 @@ class LinkedInScraper(Scraper):
             try:
                 date_posted = self._parse_date(datetime_str)
             except ValueError as e:
-                logger.warning(f"Failed to parse date {datetime_str}: {e}")
+                self.logger.warning(f"Failed to parse date {datetime_str}: {e}")
         job_details: dict[str, Any] = {}
         if full_descr:
             job_details = self._get_job_details(job_id)
@@ -277,7 +280,7 @@ class LinkedInScraper(Scraper):
             response = self.session.get(f"{self.base_url}/jobs/view/{job_id}", timeout=5)
             response.raise_for_status()
         except (requests.RequestException, TimeoutError) as e:
-            logger.warning(f"Failed to get job details: {e}")
+            self.logger.warning(f"Failed to get job details: {e}")
             return {}
         if "linkedin.com/signup" in response.url:
             return {}
@@ -438,5 +441,5 @@ class LinkedInScraper(Scraper):
         try:
             return datetime.strptime(datetime_str, "%Y-%m-%d")
         except ValueError as e:
-            logger.warning(f"Failed to parse date {datetime_str}: {e}")
+            self.logger.warning(f"Failed to parse date {datetime_str}: {e}")
             return None
