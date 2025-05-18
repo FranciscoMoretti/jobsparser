@@ -44,16 +44,11 @@ class ZipRecruiterScraper(Scraper):
     base_url = "https://www.ziprecruiter.com"
     api_url = "https://api.ziprecruiter.com"
 
-    def __init__(self, proxies: list[str] | str | None = None, ca_cert: str | None = None, logger: logging.Logger | None = None) -> None:
+    def __init__(self, logger: logging.Logger, proxies: list[str] | str | None = None, ca_cert: str | None = None) -> None:
         """
         Initializes ZipRecruiterScraper with the ZipRecruiter job search url
         """
-        super().__init__(Site.ZIP_RECRUITER, proxies=proxies)
-
-        if logger:
-            self.logger = logger
-        else:
-            self.logger = create_logger("ZipRecruiter")
+        super().__init__(Site.ZIP_RECRUITER, logger=logger, proxies=proxies, ca_cert=ca_cert)
 
         self.scraper_input: ScraperInput | None = None
         self.session: requests.Session = create_session(proxies=proxies, ca_cert=ca_cert)

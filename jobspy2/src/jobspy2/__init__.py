@@ -171,20 +171,11 @@ def scrape_jobs(
 
     def scrape_site(site: Site) -> tuple[str, JobResponse]:
         scraper_class = SCRAPER_MAPPING[site]
-        
-        # Determine logger for this specific scraper instance
-        # The logger passed to scrape_jobs (and thus to ScraperInput) is the primary one.
-        # If none, fallback to creating a logger for this specific site.
-        logger_for_scraper = scraper_input.logger if scraper_input.logger else create_logger(site.value)
-
-        scraper = scraper_class(proxies=proxies, ca_cert=ca_cert, logger=logger_for_scraper)
+        site_logger = logger if logger else create_logger(site.value)
+        scraper = scraper_class(logger=site_logger, proxies=proxies, ca_cert=ca_cert)
         scraped_data: JobResponse = scraper.scrape(scraper_input)
-        
-        # The scraper itself should use its self.logger for its internal logging.
-        # The message about "finished scraping" can be logged by the scraper or here.
-        # Using the same logger ensures consistency.
         site_name_display = site.value.capitalize().replace("_", "") # e.g. ZipRecruiter
-        logger_for_scraper.info(f"{site_name_display} scrape processing completed by scrape_site wrapper.")
+        site_logger.info(f"{site_name_display} scrape processing completed by scrape_site wrapper.")
         return site.value, scraped_data
 
     site_to_jobs_dict = {}

@@ -268,6 +268,7 @@ class GlassdoorScraper(Scraper):
         if not location:
             return 0, "ANYWHERE"
         try:
+            
             response = self.session.get(
                 f"{self.base_url}/findPopularLocationAjax.htm",
                 params={"term": location},
