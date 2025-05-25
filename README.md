@@ -39,13 +39,13 @@ jobsparser \
      --site linkedin \
      --site indeed \
      --site google \
-     --results-wanted 50 \
+     --results-wanted 20 \
      --job-type fulltime \
      --output-dir "my_jobs" \
      --hours-old 168 \
      --linkedin-experience-level "internship" \
      --linkedin-experience-level "entry_level" \
-     --country UK
+     --indeed-country UK
 ```
 
 See all options:
