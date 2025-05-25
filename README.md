@@ -34,9 +34,11 @@ Advanced usage:
 jobsparser \
      --search-term "junior web developer" \
      --search-term "junior software engineer" \
+     --search-term "junior frontend engineer" \
      --location "London" \
      --site linkedin \
      --site indeed \
+     --site google \
      --results-wanted 50 \
      --job-type fulltime \
      --output-dir "my_jobs" \

@@ -71,7 +71,7 @@ jobsparser --help
 - `--results-wanted`: Total number of results (default: 100)
 - `--distance`: Search radius in miles/km (default: 25)
 - `--job-type`: Type of job (default: fulltime)
-- `--country`: Country code for Indeed search (default: UK)
+- `--country`: Country code for Indeed search (default: usa)
 - `--fetch-description`: Fetch full job description (default: true)
 - `--proxies`: Proxy addresses to use (can be specified multiple times)
 - `--batch-size`: Results per batch (default: 30)

@@ -130,7 +130,7 @@ def _scrape_single_site(
 @click.option('--results-wanted', default=100, help='Total number of results to fetch per site')
 @click.option('--distance', default=25, help='Distance radius for job search')
 @click.option('--job-type', type=click.Choice(['fulltime', 'parttime', 'contract', 'internship']), default='fulltime', help='Type of job')
-@click.option('--country', default='UK', help='Country code for Indeed search')
+@click.option('--indeed-country', default='usa', help='Country code for Indeed search')
 @click.option('--fetch-description/--no-fetch-description', default=True, help='Fetch full job description for LinkedIn')
 @click.option('--proxies', multiple=True, default=None, help="Proxy addresses to use. Can be specified multiple times. E.g. --proxies '208.195.175.46:65095' --proxies '208.195.175.45:65095'")
 @click.option('--batch-size', default=30, help='Number of results to fetch in each batch')
@@ -140,7 +140,7 @@ def _scrape_single_site(
 @click.option('--output-dir', default='data', help='Directory to save output CSV')
 @click.option('--linkedin-experience-level', multiple=True, type=click.Choice([level.value for level in LinkedInExperienceLevel]), default=None, help='Experience levels for LinkedIn')
 @click.option('-v', '--verbose', count=True, help="Verbosity: -v for DEBUG, default INFO for this script's logs.", default=0)
-def main(search_term, location, site, results_wanted, distance, job_type, country,
+def main(search_term, location, site, results_wanted, distance, job_type, indeed_country,
          fetch_description, proxies, batch_size, sleep_time, max_retries, hours_old, output_dir, linkedin_experience_level, verbose):
     """Scrape jobs from various job sites with customizable parameters."""
     
@@ -218,7 +218,7 @@ def main(search_term, location, site, results_wanted, distance, job_type, countr
                     distance=distance,
                     linkedin_fetch_description=fetch_description,
                     job_type=job_type,
-                    country_indeed=country,
+                    country_indeed=indeed_country,
                     results_wanted_for_site=results_wanted,
                     proxies=list(proxies) if proxies else None,
                     hours_old=hours_old,
