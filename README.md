@@ -2,6 +2,8 @@
 
 A simple CLI tool to scrape jobs from multiple job sites (LinkedIn, Indeed, Google).
 
+![WindowsTerminal_ItCx4KSla3](https://github.com/user-attachments/assets/7faed086-7eb3-4978-a175-e2b9df3c0cdc)
+
 Relevant article: [Automate Your Job Search: Scraping 400+ LinkedIn Jobs with Python](https://www.franciscomoretti.com/blog/automate-your-job-search)
 
 ## Installation
