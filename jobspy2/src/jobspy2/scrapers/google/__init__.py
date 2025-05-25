@@ -13,6 +13,7 @@ import math
 import re
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import urlencode
 
 import requests
 
@@ -127,6 +128,11 @@ class GoogleJobsScraper(Scraper):
             return None, []
         query = self._build_search_query()
         params = {"q": query, "udm": "8"}
+        
+        # Debug: Log the full URL being visited
+        full_url = f"{self.url}?{urlencode(params)}"
+        self.logger.debug(f"Visiting initial search URL: {full_url}")
+        
         response = self.session.get(self.url, headers=headers_initial, params=params)
 
         pattern_fc = r'<div jsname="Yust4d"[^>]+data-async-fc="([^"]+)"'
@@ -145,6 +151,11 @@ class GoogleJobsScraper(Scraper):
         if not self.session:
             return [], None
         params = {"fc": [forward_cursor], "fcv": ["3"], "async": [async_param]}
+        
+        # Debug: Log the full URL being visited
+        full_url = f"{self.jobs_url}?{urlencode(params, doseq=True)}"
+        self.logger.debug(f"Visiting next page URL: {full_url}")
+        
         response = self.session.get(self.jobs_url, headers=headers_jobs, params=params)
         return self._parse_jobs(response.text)
 
